@@ -4,20 +4,16 @@ object Exercise3 {
         henderson.printCat
         quentin.printCat
         ChipShop.willServe(oswald)
-        print(eastwood.yearOfBirth) // should be 1930
-        print(dieHard.director.name) // should be "John McTiernan"
-        print(invictus.isDirectedBy(nolan)) // should be false
-    }
-
-    def print(input: Any): Unit = {
-        println(input)
+        println(eastwood.yearOfBirth) // should be 1930
+        println(dieHard.director.name) // should be "John McTiernan"
+        println(invictus.isDirectedBy(nolan)) // should be false
     }
 
     val oswald = new Cat("Black", "Milk")
     val henderson = new Cat("Ginger", "Chips")
     val quentin = new Cat("Tabby and White", "Curry")
 
-    class Cat(val colour: String, val food: String) {
+    case class Cat(val colour: String, val food: String) {
         def printCat = {
             println(this.colour, this.food)
         }
@@ -50,21 +46,14 @@ object Exercise3 {
     val huntForRedOctober = new Film("The Hunt for Red October", 1990, 7.6, mcTiernan)
     val thomasCrownAffair = new Film("The Thomas Crown Affair", 1999, 6.8, mcTiernan)
 
-    class Director(firstname: String, lastname: String, yearofbirth: Int) {
-        val firstName: String = this.firstname
-        val lastName: String = this.lastname
-        val yearOfBirth: Int = this.yearofbirth
+    case class Director(val firstname: String, val lastname: String, val yearOfBirth: Int) {
 
         def name: String = { 
-            firstName + " " + lastName
+            firstname + " " + lastname
         }
     }
 
-    class Film(filmName: String, yearofrelease: Int, rating: Double, filmDirector: Director) {
-        val name: String = this.filmName
-        val yearOfRelease: Int = this.yearofrelease
-        val imdbRating: Double = this.rating
-        val director: Director = this.filmDirector
+    case class Film(val name: String, val yearOfRelease: Int, imdbRating: Double, director: Director) {
 
         def directorsAge: Int = { 
             yearOfRelease - director.yearOfBirth
