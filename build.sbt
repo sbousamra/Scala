@@ -2,7 +2,7 @@ name := "scalabass"
 
 scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-encoding", "utf8", "-Xfatal-warnings", "-language:postfixOps")
 
-mainClass := "day2.Day2"
+mainClass := Some("day2.Day2")
 
 libraryDependencies ++= Seq(
   "org.scalaz"                  %% "scalaz-core"                    % "7.1.5",

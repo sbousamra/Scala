@@ -15,7 +15,7 @@ object chapter1 {
 
 	object Quentin {
 		val Colour: String = "Tabby and white"
-		val Food: String = "Curry"
+		val Food: String = "Curry"	
 	}
 
 	object calc {
