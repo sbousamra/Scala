@@ -1,3 +1,5 @@
+package chapter3exercises
+
 object Exercise3 {
     def main(args: Array[String]): Unit = {
         oswald.printCat
@@ -7,6 +9,9 @@ object Exercise3 {
         println(eastwood.yearOfBirth) // should be 1930
         println(dieHard.director.name) // should be "John McTiernan"
         println(invictus.isDirectedBy(nolan)) // should be false
+        println(highPlainsDrifter.copy(name = "L'homme des hautes plaines")) // returns Film("L'homme des hautes plaines", 1973, 7.7, /* etc */)
+        println(thomasCrownAffair.copy(yearOfRelease = 1968, director = new Director("Norman", "Jewison", 1926))) // returns Film("The Thomas Crown Affair", 1926, /* etc */)
+        println(inception.copy().copy().copy()) // returns a new copy of `inception
     }
 
     val oswald = new Cat("Black", "Milk")
@@ -46,14 +51,18 @@ object Exercise3 {
     val huntForRedOctober = new Film("The Hunt for Red October", 1990, 7.6, mcTiernan)
     val thomasCrownAffair = new Film("The Thomas Crown Affair", 1999, 6.8, mcTiernan)
 
-    case class Director(val firstname: String, val lastname: String, val yearOfBirth: Int) {
+    case class Director(firstName: String, lastName: String, yearOfBirth: Int) {
 
         def name: String = { 
-            firstname + " " + lastname
+            firstName + " " + lastName
+        }
+
+        def copy(firstName: String = this.firstName, lastName: String = this.lastName, yearOfBirth: Int = this.yearOfBirth) = {
+            new Director(firstName, lastName, yearOfBirth)
         }
     }
 
-    case class Film(val name: String, val yearOfRelease: Int, imdbRating: Double, director: Director) {
+    case class Film(name: String, yearOfRelease: Int, imdbRating: Double,director: Director) {
 
         def directorsAge: Int = { 
             yearOfRelease - director.yearOfBirth
@@ -61,6 +70,10 @@ object Exercise3 {
 
         def isDirectedBy(filmDirector: Director): Boolean = {
             filmDirector == director
+        }
+
+        def copy(name: String = this.name, yearOfRelease: Int = this.yearOfRelease, imdbRating: Double = this.imdbRating, director: Director = this.director): Film = {
+            new Film(name, yearOfRelease, imdbRating, director)
         }
     }
 }
