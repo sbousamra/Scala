@@ -2,17 +2,13 @@ package challenge289
 
 object Challenge289 {
   def main(args: Array[String]) {
-    val input = "fire,grass\nfighting,ice\npsychic,poison\nwater,normal\nfire,rock"
-    val inputFormatted = input.split("\n").toList.map(line => line.split(",").toList).map(pairs => (pairs.head, pairs.last))
-    val pokemonWeWantToCheck = inputFormatted.map(line => (Pokemon.fromString(line._1), Pokemon.fromString(line._2)))
-    val readPokemonDataFromFile = scala.io.Source.fromFile("src\\main\\resources\\PokemonData.txt").getLines.mkString("\n")
-    val pokemonData = pokemonDataFormatted(readPokemonDataFromFile)
-    val effectiveness: List[Option[Double]] = pokemonWeWantToCheck.map(line => fightEffectiveness(line._1, line._2, pokemonData))
-    effectiveness.map(effectiveness => effectiveness match {
-      case Some(effect) => println(effect)
-      case None => println("could not compute value")
-    }
-    )
+    val pokemonWeWant = "fire,grass\nfighting,ice\npsychic,poison\nwater,normal\nfire,rock"
+    val pokemonWeWantFormatted: List[(Pokemon, Pokemon)] = pokemonWeWant.split("\n").toList.map(line => line.split(",").toList).map(pairs => (pairs.head, pairs.last)).map(line => (Pokemon.fromString(line._1), Pokemon.fromString(line._2)))
+    val readPokemonDataTableFromFile = scala.io.Source.fromFile("src\\main\\resources\\PokemonData.txt").getLines.mkString("\n")
+    val pokemonDataFromTableFormatted = pokemonDataFromTable(readPokemonDataTableFromFile)
+
+    val effectiveness = chooseTableOrApi(pokemonWeWantFormatted, Some(pokemonDataFromTableFormatted))
+    println(effectiveness)
   }
 
   sealed trait Pokemon
@@ -60,18 +56,30 @@ object Challenge289 {
     }
   }
 
-  def pokemonDataFormatted(input: String): Map[Pokemon, Map[Pokemon, Double]] = {
+  def chooseTableOrApi(input: List[(Pokemon, Pokemon)], optionalDataFromTable: Option[Map[Pokemon, Map[Pokemon, Double]]]): List[Option[Double]] = {
+    optionalDataFromTable match {
+      case Some(exists) => input.map(line => fightEffectivenessFromTable(line._1, line._2, exists))
+      case None => input.map(line => fightEffectivenessFromApi(line._1, line._2, pokemonDataFromApi(line._1)))
+    }
+  }
+
+  def pokemonDataFromTable(input: String): Map[Pokemon, Map[Pokemon, Double]] = {
     val inputFormat = input.split("\n").toList.map (line => line.split(" ").toList.filter (x => x != ""))
     val pokemons: List[Pokemon] = inputFormat.head.map(Pokemon.fromString)
     val pokemonToFight: List[Map[Pokemon, Double]] = inputFormat.tail.map(values => pokemons.zip(values.map(x => x.toDouble)).toMap)
     pokemons.zip(pokemonToFight).toMap
   }
 
-  def fightEffectiveness(p1: Pokemon, p2: Pokemon, pokemonData: Map[Pokemon, Map[Pokemon, Double]]): Option[Double] = {
+  def fightEffectivenessFromTable(p1: Pokemon, p2: Pokemon, pokemonData: Map[Pokemon, Map[Pokemon, Double]]): Option[Double] = {
     pokemonData.get(p1).flatMap(pokemon => pokemon.get(p2))
   }
 
-  def pokemonDataFromApi(p1: Pokemon, p2: Pokemon): Double = {
+  def pokemonDataFromApi(p1: Pokemon): Map[Pokemon, Double] = {
     ???
+  }
+
+  def fightEffectivenessFromApi(p1: Pokemon, p2: Pokemon, pokemonData: Map[Pokemon, Double]): Option[Double] = {
+    val pokemonValueImVersing: Option[Double] = pokemonData.get(p2)
+    pokemonValueImVersing
   }
 }
