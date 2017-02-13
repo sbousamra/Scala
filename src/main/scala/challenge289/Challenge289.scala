@@ -1,14 +1,27 @@
 package challenge289
 
+import argonaut.{DecodeJson, Json}
+import org.http4s.{Request, Uri}
+import org.http4s.client.blaze.SimpleHttp1Client
+import org.http4s.argonaut.jsonDecoder
+
+import scalaz.concurrent.Task
+
 object Challenge289 {
   def main(args: Array[String]) {
     val pokemonWeWant = "fire,grass\nfighting,ice\npsychic,poison\nwater,normal\nfire,rock"
     val pokemonWeWantFormatted: List[(Pokemon, Pokemon)] = pokemonWeWant.split("\n").toList.map(line => line.split(",").toList).map(pairs => (pairs.head, pairs.last)).map(line => (Pokemon.fromString(line._1), Pokemon.fromString(line._2)))
-    val readPokemonDataTableFromFile = scala.io.Source.fromFile("src\\main\\resources\\PokemonData.txt").getLines.mkString("\n")
-    val pokemonDataFromTableFormatted = pokemonDataFromTable(readPokemonDataTableFromFile)
+    val useTable = false
 
-    val effectiveness = chooseTableOrApi(pokemonWeWantFormatted, Some(pokemonDataFromTableFormatted))
-    println(effectiveness)
+    val result: List[String] = pokemonWeWantFormatted.flatMap { case (p1, p2) =>
+      val effectiveness = if (useTable) {
+        fightEffectivenessFromTable(p1, p2)
+      } else {
+        fightEffectivenessFromApi(p1, p2)
+      }
+      effectiveness.map(formatResult)
+    }
+    result.foreach(println)
   }
 
   sealed trait Pokemon
@@ -56,13 +69,6 @@ object Challenge289 {
     }
   }
 
-  def chooseTableOrApi(input: List[(Pokemon, Pokemon)], optionalDataFromTable: Option[Map[Pokemon, Map[Pokemon, Double]]]): List[Option[Double]] = {
-    optionalDataFromTable match {
-      case Some(exists) => input.map(line => fightEffectivenessFromTable(line._1, line._2, exists))
-      case None => input.map(line => fightEffectivenessFromApi(line._1, line._2, pokemonDataFromApi(line._1)))
-    }
-  }
-
   def pokemonDataFromTable(input: String): Map[Pokemon, Map[Pokemon, Double]] = {
     val inputFormat = input.split("\n").toList.map (line => line.split(" ").toList.filter (x => x != ""))
     val pokemons: List[Pokemon] = inputFormat.head.map(Pokemon.fromString)
@@ -70,16 +76,50 @@ object Challenge289 {
     pokemons.zip(pokemonToFight).toMap
   }
 
-  def fightEffectivenessFromTable(p1: Pokemon, p2: Pokemon, pokemonData: Map[Pokemon, Map[Pokemon, Double]]): Option[Double] = {
-    pokemonData.get(p1).flatMap(pokemon => pokemon.get(p2))
+  def fightEffectivenessFromTable(p1: Pokemon, p2: Pokemon): Option[Double] = {
+    val readPokemonDataTableFromFile = scala.io.Source.fromFile("src\\main\\resources\\PokemonData.txt").getLines.mkString("\n")
+    val pokemonDataFromTableFormatted = pokemonDataFromTable(readPokemonDataTableFromFile)
+    println(pokemonDataFromTableFormatted)
+    pokemonDataFromTableFormatted.get(p1).flatMap(pokemon => pokemon.get(p2))
+  }
+
+  case class Effectiveness(name: String)
+  case class PokemonApiDamageEffectiveness(noDamage: List[Effectiveness], halfDamage: List[Effectiveness], doubleDamage: List[Effectiveness])
+
+  implicit def pokemonApiDamageEffectivenessDecodeJson: DecodeJson[PokemonApiDamageEffectiveness] = { DecodeJson { h =>
+    for {
+      noDamage <- (h --\ "damage_relations").get[List[Effectiveness]]("no_damage_to")
+      halfDamage <- (h --\ "damage_relations").get[List[Effectiveness]]("half_damage_to")
+      doubleDamage <- (h --\ "damage_relations").get[List[Effectiveness]]("double_damage_to")
+    } yield PokemonApiDamageEffectiveness(noDamage, halfDamage, doubleDamage)
+  }
+  }
+
+  implicit def effectivenessDecodeJson: DecodeJson[Effectiveness] = {
+    DecodeJson { h =>
+      for {
+        name <- h.get[String]("name")
+      } yield Effectiveness(name)
+    }
   }
 
   def pokemonDataFromApi(p1: Pokemon): Map[Pokemon, Double] = {
-    ???
+    // 1. Make request to API to get back list of effectiveness of p1.
+    // 2. Turn the JSON returned into Map[Pokemon, Double]
+    val url: Uri = Uri.unsafeFromString("http://pokeapi.co/api/v2/type/" + p1.toString.toLowerCase + "/")
+    val responseAsJson = SimpleHttp1Client().expect[Json](url).run
+    val effectiveness = responseAsJson.as[PokemonApiDamageEffectiveness].toOption.get
+    println(effectiveness)
+    Map(Fire -> 0.5)
   }
 
-  def fightEffectivenessFromApi(p1: Pokemon, p2: Pokemon, pokemonData: Map[Pokemon, Double]): Option[Double] = {
-    val pokemonValueImVersing: Option[Double] = pokemonData.get(p2)
-    pokemonValueImVersing
+
+
+  def fightEffectivenessFromApi(p1: Pokemon, p2: Pokemon): Option[Double] = {
+    pokemonDataFromApi(p1).get(p2)
+  }
+
+  def formatResult(result: Double): String = {
+    result.toString + "x"
   }
 }
