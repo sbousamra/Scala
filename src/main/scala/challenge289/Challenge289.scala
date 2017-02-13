@@ -17,7 +17,11 @@ object Challenge289 {
       val effectiveness = if (useTable) {
         fightEffectivenessFromTable(p1, p2)
       } else {
-        fightEffectivenessFromApi(p1, p2)
+        if (fightEffectivenessFromApi(p1, p2) != None) {
+          fightEffectivenessFromApi(p1, p2)
+        } else {
+          Some(1.0)
+        }
       }
       effectiveness.map(formatResult)
     }
@@ -109,14 +113,15 @@ object Challenge289 {
     val url: Uri = Uri.unsafeFromString("http://pokeapi.co/api/v2/type/" + p1.toString.toLowerCase + "/")
     val responseAsJson = SimpleHttp1Client().expect[Json](url).run
     val effectiveness = responseAsJson.as[PokemonApiDamageEffectiveness].toOption.get
-    println(effectiveness)
-    Map(Fire -> 0.5)
+    val noDamage: List[(String, Double)] = effectiveness.noDamage.map(x => (x.name, 0.0))
+    val halfDamage: List[(String, Double)] = effectiveness.halfDamage.map(x => (x.name, 0.5))
+    val doubleDamage: List[(String, Double)] = effectiveness.doubleDamage.map(x => (x.name, 2.0))
+    val allTogether: List[(String, Double)] = noDamage ++ halfDamage ++ doubleDamage
+    allTogether.toMap.map(x => (Pokemon.fromString(x._1), x._2))
   }
 
-
-
   def fightEffectivenessFromApi(p1: Pokemon, p2: Pokemon): Option[Double] = {
-    pokemonDataFromApi(p1).get(p2)
+      pokemonDataFromApi(p1).get(p2)
   }
 
   def formatResult(result: Double): String = {
