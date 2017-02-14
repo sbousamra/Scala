@@ -17,11 +17,7 @@ object Challenge289 {
       val effectiveness = if (useTable) {
         fightEffectivenessFromTable(p1, p2)
       } else {
-        if (fightEffectivenessFromApi(p1, p2) != None) {
-          fightEffectivenessFromApi(p1, p2)
-        } else {
-          Some(1.0)
-        }
+        fightEffectivenessFromApi(p1, p2).orElse(Some(1.0))
       }
       effectiveness.map(formatResult)
     }
